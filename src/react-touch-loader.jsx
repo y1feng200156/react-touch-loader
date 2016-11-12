@@ -50,26 +50,26 @@ export default React.createClass({
     },
 
     touchStart(e) {
-        if(!this.canRefresh()) return;
-        if(e.touches.length == 1) this._initialTouch = {
+        if (!this.canRefresh()) return;
+        if (e.touches.length == 1) this._initialTouch = {
             clientY: e.touches[0].clientY,
             scrollTop: this.refs.panel.scrollTop
         };
     },
     touchMove(e) {
-        if(!this.canRefresh()) return;
+        if (!this.canRefresh()) return;
         var scrollTop = this.refs.panel.scrollTop;
         var distance = this.calculateDistance(e.touches[0]);
 
-        if(distance > 0 && scrollTop <= 0){
+        if (distance > 0 && scrollTop <= 0) {
             var pullDistance = distance - this._initialTouch.scrollTop;
-            if(pullDistance < 0) {
+            if (pullDistance < 0) {
                 // 修复webview滚动过程中touchstart时计算panel.scrollTop不准
                 pullDistance = 0;
                 this._initialTouch.scrollTop = distance;
             }
             var pullHeight = this.easing(pullDistance);
-            if(pullHeight) e.preventDefault();// 减弱滚动
+            if (pullHeight) e.preventDefault();// 减弱滚动
 
             this.setState({
                 loaderState: pullHeight > this.props.distanceToRefresh ? STATS.enough : STATS.pulling,
@@ -78,7 +78,7 @@ export default React.createClass({
         }
     },
     touchEnd() {
-        if(!this.canRefresh()) return;
+        if (!this.canRefresh()) return;
         var endState = {
             loaderState: STATS.reset,
             pullHeight: 0
@@ -92,39 +92,59 @@ export default React.createClass({
             });
 
             // trigger refresh action
-            this.props.onRefresh(function(){
+            this.props.onRefresh(function () {
                 // resove
                 this.setState({
                     loaderState: STATS.refreshed,
                     pullHeight: 0
                 });
-            }.bind(this), function(){
+            }.bind(this), function () {
                 // reject
                 this.setState(endState);// reset
             }.bind(this));
-        }else this.setState(endState);// reset
+        } else this.setState(endState);// reset
     },
 
     loadMore(){
-        this.setState({ loaderState:  STATS.loading });
-        this.props.onLoadMore(function(){
+        this.setState({loaderState: STATS.loading});
+        this.props.onLoadMore(function () {
             // resolve
             this.setState({loaderState: STATS.init});
         }.bind(this));
     },
 
     componentWillReceiveProps(nextProps) {
-        if(nextProps.initializing < 2) this.setState({
+        if (nextProps.initializing < 2) this.setState({
             progressed: 0 // reset progress animation state
         });
     },
     animationEnd(){
         var newState = {};
 
-        if(this.state.loaderState == STATS.refreshed) newState.loaderState = STATS.init;
-        if(this.props.initializing > 1) newState.progressed = 1;
+        if (this.state.loaderState == STATS.refreshed) newState.loaderState = STATS.init;
+        if (this.props.initializing > 1) newState.progressed = 1;
 
         this.setState(newState);
+    },
+    scrollLoadMore(event){
+        let footer,
+            currentTarget;
+
+        if (this.state.loaderState == STATS.refreshing || this.state.loaderState == STATS.loading) return;
+
+        currentTarget = event.currentTarget;
+        footer = this.refs.footer;
+        if (!footer) return;
+
+        let hasLoad = (footer.offsetTop - currentTarget.offsetHeight - currentTarget.scrollTop - 30) <= 0;
+        this.refs.panel.removeEventListener('scroll', () => false);
+        if (hasLoad) {
+            this.loadMore();
+            this.refs.panel.addEventListener('scroll', this.scrollLoadMore);
+        }
+    },
+    componentDidMount(){
+        this.refs.panel.addEventListener('scroll', this.scrollLoadMore);
     },
     render(){
         const {
@@ -139,7 +159,7 @@ export default React.createClass({
         } = this.state;
 
         var footer = hasMore ? (
-            <div className="tloader-footer">
+            <div className="tloader-footer" ref={'footer'}>
                 <div className="tloader-btn" onClick={this.loadMore}/>
                 <div className="tloader-loading"><i className="ui-loading"/></div>
             </div>
@@ -150,18 +170,18 @@ export default React.createClass({
         } : null;
 
         var progressClassName = '';
-        if(!progressed){
-            if(initializing > 0) progressClassName += ' tloader-progress';
-            if(initializing > 1) progressClassName += ' ed';
+        if (!progressed) {
+            if (initializing > 0) progressClassName += ' tloader-progress';
+            if (initializing > 1) progressClassName += ' ed';
         }
 
         return (
             <div ref="panel"
-                className={`tloader state-${loaderState} ${className}${progressClassName}`}
-                onTouchStart={this.touchStart}
-                onTouchMove={this.touchMove}
-                onTouchEnd={this.touchEnd}
-                onAnimationEnd={this.animationEnd}>
+                 className={`tloader state-${loaderState} ${className}${progressClassName}`}
+                 onTouchStart={this.touchStart}
+                 onTouchMove={this.touchMove}
+                 onTouchEnd={this.touchEnd}
+                 onAnimationEnd={this.animationEnd}>
 
                 <div className="tloader-symbol">
                     <div className="tloader-msg"><i/></div>
