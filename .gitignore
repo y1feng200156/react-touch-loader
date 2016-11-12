@@ -33,6 +33,8 @@ yarn.lock
 # Mongo Explorer plugin:
 .idea/mongoSettings.xml
 
+.idea
+
 ## File-based project format:
 *.iws
 
@@ -78,4 +80,3 @@ Icon
 Network Trash Folder
 Temporary Items
 .apdisk
-
